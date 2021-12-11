@@ -37,9 +37,9 @@ class Analytic(AnalyticBase):
         
         returns: d1 as per Black-Scholes formula (scalar)
         """
-        return (np.log(s0 / k) + (
-                    self.r() - self.q() + self.sigma() ** 2 / 2) * tau) / (
-                           self.sigma() * np.sqrt(tau))
+        return 1 / (self.sigma() * np.sqrt(tau)) * (np.log(s0 / k)
+                + (self.r() - self.q() + self.sigma() ** 2 / 2) * tau) \
+
 
     def price(self, s0: float, tau: float, k: float, pc: chr = 'c') -> float:
         """
@@ -67,13 +67,13 @@ class Analytic(AnalyticBase):
                 "black_scholes:Analytic:price_option: flag %s is invalid." % pc)
 
     def delta(self, s0: float, tau: float, k: float, pc: chr = 'c') -> float:
-        Phi = stats.norm(loc=0, scale=1).cdf
+        Phi = stats.norm(loc=0., scale=1.).cdf
         dp = self._dp(s0, tau, k)
         delta_call = np.exp(-self.q() * tau) * Phi(dp)
         if pc == 'c':
             return delta_call
         elif pc == 'p':
-            return delta_call - 1
+            return delta_call - np.exp(-self.q() * tau)
         else:
             raise ValueError(
                 "black_scholes:Analytic:delta: flag %s is invalid." % pc)
@@ -94,16 +94,14 @@ class Analytic(AnalyticBase):
         phi = stats.norm(loc=0, scale=1).pdf
         dp = self._dp(s0, tau, k)
         dm = dp - self.sigma() * np.sqrt(tau)
-        if pc == 'c':
-            return self.q() * np.exp(-self.q() * tau) * s0 * Phi(dp) \
+        theta_call = self.q() * np.exp(-self.q() * tau) * s0 * Phi(dp) \
                    - self.r() * np.exp(-self.r() * tau) * k * Phi(dm) \
                    - np.exp(-self.q() * tau) * self.sigma() * s0 * phi(dp) / (
                                2 * np.sqrt(tau))
+        if pc == 'c':
+            return theta_call
         elif pc == 'p':
-            return self.q() * np.exp(-self.q() * tau) * s0 * Phi(dp) \
-                   + self.r() * np.exp(-self.r() * tau) * k * Phi(-dm) \
-                   - np.exp(-self.q() * tau) * self.sigma() * s0 * phi(dp) / (
-                               2 * np.sqrt(tau))
+            return theta_call - self.q() * np.exp(-self.q() * tau) * s0 + self.r() * np.exp(-self.r() * tau) * k
         else:
             raise ValueError(
                 "black_scholes:Analytic:theta: flag %s is invalid." % pc)
@@ -113,7 +111,7 @@ class Analytic(AnalyticBase):
         dp = self._dp(s0, tau, k)
         dm = dp - self.sigma() * np.sqrt(tau)
         if pc == 'c':
-            return tau * np.exp(self.r() * tau) * k * Phi(dm)
+            return tau * np.exp(-self.r() * tau) * k * Phi(dm)
         elif pc == 'p':
             return - tau * np.exp(-self.r() * tau) * k * Phi(-dm)
         else:
