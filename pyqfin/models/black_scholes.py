@@ -1,6 +1,6 @@
 import numpy as np
 import scipy.stats as stats
-from pyqfin.models.model import ParametersBase, AnalyticBase, ModelBase
+from pyqfin.models.model import ParametersBase, AnalyticBase, SimulationBase
 
 
 class Parameters(ParametersBase):
@@ -20,7 +20,7 @@ class Parameters(ParametersBase):
 class Analytic(AnalyticBase):
 
     @classmethod
-    def fromParams(cls, sigma, r, q=0):
+    def fromParamValues(cls, sigma, r, q=0):
         return cls(Parameters(sigma, r, q))
 
     def _dp(self, s0: float, tau: float, k: float) -> float:
@@ -117,3 +117,26 @@ class Analytic(AnalyticBase):
         else:
             raise ValueError(
                 "black_scholes:Analytic:rho: flag %s is invalid." % pc)
+
+
+class Simulation(SimulationBase):
+
+    def __init__(self, params, time_grid, npaths) -> None:
+        self.params = params
+        self.analytic = Analytic(params)
+        self.time_grid = time_grid
+        self.ntimes = self.time_grid.shape[0]
+        self.npaths = npaths
+        self.s_ = None
+
+    def simulate(self, s0, seed=1, z=None):
+        np.random.seed(seed)
+        if z is None:
+            z = np.random.standard_normal((self.npaths, self.ntimes - 1))
+        self._simulate_with(s0, z)
+        return self
+
+    def _simulate_with(self, s0, z):
+        delta = self.time_grid[1:] - self.time_grid[:-1]
+        paths = self.params.s0 * np.cumprod(np.exp((self.params.r - self.params.q - self.params.sigma ** 2 / 2) * delta + self.params.sigma * np.sqrt(delta) * z), axis=1)
+        self.s_ = np.transpose(np.c_[np.ones(self.npaths) * s0, paths])

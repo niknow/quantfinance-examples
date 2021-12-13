@@ -49,7 +49,7 @@ class TestAnalytic(TestCase):
         return super().setUp()
 
     def test_regression(self):
-        self.bsa = Analytic.fromParams(0.3, 0.01)
+        self.bsa = Analytic.fromParamValues(0.3, 0.01)
         c = self.bsa.price(100, 1, 95, 'c')
         p = self.bsa.price(100, 1, 95, 'p')
         np.testing.assert_almost_equal(c, 14.780463438292863)
@@ -60,7 +60,7 @@ class TestAnalytic(TestCase):
                                                          self.qs, self.taus,
                                                          self.ks, self.s0s):
             with self.subTest():
-                self.bsa = Analytic.fromParams(sigma, r, q)
+                self.bsa = Analytic.fromParamValues(sigma, r, q)
                 c = self.bsa.price(s0, tau, k, 'c')
                 p = self.bsa.price(s0, tau, k, 'p')
                 df = np.exp(- r * tau)
@@ -91,7 +91,7 @@ class TestAnalytic(TestCase):
                                                          self.ks, self.s0s):
             with self.subTest():
                 t = T - tau
-                self.bsa = Analytic.fromParams(sigma, r, q)
+                self.bsa = Analytic.fromParamValues(sigma, r, q)
                 c_price = self.bsa.price(s0, tau, k, 'c')
                 p_price = self.bsa.price(s0, tau, k, 'p')
                 np.testing.assert_almost_equal(
@@ -125,7 +125,7 @@ class TestAnalytic(TestCase):
                                                          self.ks, self.s0s):
             with self.subTest():
                 t = T - tau
-                self.bsa = Analytic.fromParams(sigma, r, q)
+                self.bsa = Analytic.fromParamValues(sigma, r, q)
                 c_delta = self.bsa.delta(s0, tau, k, 'c')
                 p_delta = self.bsa.delta(s0, tau, k, 'p')
                 np.testing.assert_almost_equal(
@@ -161,7 +161,7 @@ class TestAnalytic(TestCase):
                                                          self.ks, self.s0s):
             with self.subTest():
                 t = T - tau
-                self.bsa = Analytic.fromParams(sigma, r, q)
+                self.bsa = Analytic.fromParamValues(sigma, r, q)
                 c_gamma = self.bsa.gamma(s0, tau, k)
                 p_gamma = c_gamma
                 np.testing.assert_almost_equal(
@@ -195,7 +195,7 @@ class TestAnalytic(TestCase):
                                                          self.ks, self.s0s):
             with self.subTest():
                 t = T - tau
-                self.bsa = Analytic.fromParams(sigma, r, q)
+                self.bsa = Analytic.fromParamValues(sigma, r, q)
                 c_vega = self.bsa.vega(s0, tau, k)
                 p_vega = c_vega
                 np.testing.assert_almost_equal(
@@ -229,7 +229,7 @@ class TestAnalytic(TestCase):
                                                          self.ks, self.s0s):
             with self.subTest():
                 t = T - tau
-                self.bsa = Analytic.fromParams(sigma, r, q)
+                self.bsa = Analytic.fromParamValues(sigma, r, q)
                 c_theta = self.bsa.theta(s0, tau, k, 'c')
                 p_theta = self.bsa.theta(s0, tau, k, 'p')
                 np.testing.assert_almost_equal(
@@ -264,7 +264,7 @@ class TestAnalytic(TestCase):
             with self.subTest():
                 t = T - tau
                 print(sigma, r, q, tau, k, s0)
-                self.bsa = Analytic.fromParams(sigma, r, q)
+                self.bsa = Analytic.fromParamValues(sigma, r, q)
                 c_rho = self.bsa.rho(s0, tau, k, 'c')
                 p_rho = self.bsa.rho(s0, tau, k, 'p')
                 np.testing.assert_almost_equal(

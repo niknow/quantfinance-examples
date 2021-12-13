@@ -1,5 +1,4 @@
 from abc import ABC
-import types
 
 
 class ParametersBase(ABC):
@@ -18,5 +17,5 @@ class AnalyticBase(ABC):
             setattr(self, k, lambda v=v: v)
 
 
-class ModelBase(ABC):
+class SimulationBase(ABC):
     pass
