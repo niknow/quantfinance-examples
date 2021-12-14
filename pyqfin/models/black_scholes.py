@@ -3,7 +3,7 @@ import scipy.stats as stats
 from pyqfin.models.model import ParametersBase, AnalyticBase, SimulationBase
 
 
-class Parameters(ParametersBase):
+class Params(ParametersBase):
 
     def __init__(self, sigma: float, r: float, q: float = 0) -> None:
         """
@@ -21,7 +21,7 @@ class Analytic(AnalyticBase):
 
     @classmethod
     def fromParamValues(cls, sigma, r, q=0):
-        return cls(Parameters(sigma, r, q))
+        return cls(Params(sigma, r, q))
 
     def _dp(self, s0: float, tau: float, k: float) -> float:
         """
@@ -39,6 +39,13 @@ class Analytic(AnalyticBase):
         """
         return 1 / (self.sigma() * np.sqrt(tau)) * (np.log(s0 / k)
                 + (self.r() - self.q() + self.sigma() ** 2 / 2) * tau) \
+
+
+    def stock_mean(self, s0: float, t: float) -> float:
+        return s0 * np.exp((self.r() - self.q()) * t)
+
+    def stock_var(self, s0: float, t: float) -> float:
+        return s0**2 * (np.exp(self.sigma()**2 * t) - 1) * np.exp(2*(self.r() - self.q() - 0.5 * self.sigma()**2)*t + self.sigma()**2 * t)
 
 
     def price(self, s0: float, tau: float, k: float, pc: chr = 'c') -> float:
@@ -127,16 +134,24 @@ class Simulation(SimulationBase):
         self.time_grid = time_grid
         self.ntimes = self.time_grid.shape[0]
         self.npaths = npaths
+        self.s0 = None
         self.s_ = None
 
     def simulate(self, s0, seed=1, z=None):
         np.random.seed(seed)
+        self.s0 = s0
         if z is None:
             z = np.random.standard_normal((self.npaths, self.ntimes - 1))
-        self._simulate_with(s0, z)
+        self._simulate_with(z)
         return self
 
-    def _simulate_with(self, s0, z):
+    def _simulate_with(self, z):
         delta = self.time_grid[1:] - self.time_grid[:-1]
-        paths = self.params.s0 * np.cumprod(np.exp((self.params.r - self.params.q - self.params.sigma ** 2 / 2) * delta + self.params.sigma * np.sqrt(delta) * z), axis=1)
-        self.s_ = np.transpose(np.c_[np.ones(self.npaths) * s0, paths])
+        paths = self.s0 * np.cumprod(np.exp((self.params.r - self.params.q - self.params.sigma ** 2 / 2) * delta + self.params.sigma * np.sqrt(delta) * z), axis=1)
+        self.s_ = np.c_[np.ones(self.npaths) * self.s0, paths]
+
+    def stock_means(self):
+        return np.array([self.analytic.stock_mean(self.s0, t) for t in self.time_grid])
+
+    def stock_vars(self):
+        return np.array([self.analytic.stock_var(self.s0, t) for t in self.time_grid])
