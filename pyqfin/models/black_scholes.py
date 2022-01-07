@@ -47,6 +47,11 @@ class Analytic(AnalyticBase):
     def stock_var(self, s0: float, t: float) -> float:
         return s0**2 * (np.exp(self.sigma()**2 * t) - 1) * np.exp(2*(self.r() - self.q() - 0.5 * self.sigma()**2)*t + self.sigma()**2 * t)
 
+    def stock_autocov(self, s0: float, t1: float, t2: float) -> float:
+        if t1 <= t2:
+            return np.exp(self.sigma() ** 2 * (t1 + t2) / 2) * (np.exp(self.sigma()**2 * t1) - 1) * s0**2 * np.exp((self.r() - self.q() - 0.5 * self.sigma()**2) * (t1 + t2))
+        else:
+            return self.stock_autocov(s0, t2, t1)
 
     def price(self, s0: float, tau: float, k: float, pc: chr = 'c') -> float:
         """
@@ -150,8 +155,33 @@ class Simulation(SimulationBase):
         paths = self.s0 * np.cumprod(np.exp((self.params.r - self.params.q - self.params.sigma ** 2 / 2) * delta + self.params.sigma * np.sqrt(delta) * z), axis=1)
         self.s_ = np.c_[np.ones(self.npaths) * self.s0, paths]
 
+    def price(self, t: int, t_mat: int, k: float, pc: chr = 'c') -> float:
+        """
+        Computes the price distribution of a call option in the Black/Scholes model.
+
+        param t:     time index as of which we want to price
+        param t_mat: time index of option maturity
+        param k:   the strike of the option
+        param pc:  put call flag: 'c' for call, 'p' for put
+
+        returns: price of call option maturing after tau
+        """
+        df = np.exp(- self.params.r * (self.time_grid[t_mat] - self.time_grid[t]))
+        if pc == 'c':
+            return df * np.maximum(self.s_[:, t_mat] - k, 0)
+        elif pc == 'p':
+            return df * np.maximum(k - self.s_[:, t_mat], 0)
+        else:
+            raise ValueError(
+                "black_scholes:Simulation:price: flag %s is invalid." % pc)
+
     def stock_means(self):
         return np.array([self.analytic.stock_mean(self.s0, t) for t in self.time_grid])
 
     def stock_vars(self):
         return np.array([self.analytic.stock_var(self.s0, t) for t in self.time_grid])
+
+    def stock_autocovs(self):
+        return np.array([[self.analytic.stock_autocov(self.s0, t0, t1)
+                          for t0 in self.time_grid]
+                         for t1 in self.time_grid])
