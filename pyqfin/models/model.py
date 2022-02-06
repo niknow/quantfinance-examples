@@ -5,17 +5,24 @@ class ParametersBase(ABC):
     pass
 
 
-class AnalyticBase(ABC):
+class ParameterDependant(ABC):
 
     def __init__(self, params) -> None:
+        super().__init__()
         self.params = params
         self._add_getters()
-        super().__init__()
 
     def _add_getters(self):
         for k, v in vars(self.params).items():
             setattr(self, k, lambda v=v: v)
 
 
-class SimulationBase(ABC):
-    pass
+class AnalyticBase(ParameterDependant):
+
+    def __init__(self, params) -> None:
+        super().__init__(params)
+
+
+class SimulationBase(ParameterDependant):
+    def __init__(self, params) -> None:
+        super().__init__(params)

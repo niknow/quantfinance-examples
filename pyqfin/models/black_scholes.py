@@ -131,10 +131,25 @@ class Analytic(AnalyticBase):
                 "black_scholes:Analytic:rho: flag %s is invalid." % pc)
 
 
+def implied_volatility(price, r, s0, tm, sk, call, pc: chr = 'c') -> float:
+    """
+    Computes the implied volatility of a European option.
+
+    :param r: risk-free rate
+    :param s0: value of underlying stock price at t=0
+    :param tm: time to maturity of the option
+    :param sk: strike of the option
+    param pc:  put call flag: 'c' for call, 'p' for put
+    """
+    from py_vollib.black_scholes.implied_volatility import \
+        implied_volatility as pyvimp
+    return pyvimp(price, s0, sk, tm, r, pc)
+
+
 class Simulation(SimulationBase):
 
     def __init__(self, params, time_grid, npaths) -> None:
-        self.params = params
+        super().__init__(params)
         self.analytic = Analytic(params)
         self.time_grid = time_grid
         self.ntimes = self.time_grid.shape[0]
@@ -157,12 +172,12 @@ class Simulation(SimulationBase):
 
     def price(self, t: int, t_mat: int, k: float, pc: chr = 'c') -> float:
         """
-        Computes the price distribution of a call option in the Black/Scholes model.
+        Computes the price distribution of a European option.
 
         param t:     time index as of which we want to price
         param t_mat: time index of option maturity
-        param k:   the strike of the option
-        param pc:  put call flag: 'c' for call, 'p' for put
+        param k:     the strike of the option
+        param pc:    put call flag: 'c' for call, 'p' for put
 
         returns: price of call option maturing after tau
         """
